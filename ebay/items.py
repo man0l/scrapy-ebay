@@ -17,3 +17,12 @@ class EbayItem(scrapy.Item):
     price = scrapy.Field()
     country = scrapy.Field()
     image = scrapy.Field()
+    
+class DetailsItem(scrapy.Item):
+    ebayID        = scrapy.Field()
+    upc           = scrapy.Field()
+    mpn           = scrapy.Field()
+    brand         = scrapy.Field()
+    ean           = scrapy.Field()
+    url           = scrapy.Field()    
+    

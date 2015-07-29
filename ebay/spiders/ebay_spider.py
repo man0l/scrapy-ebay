@@ -2,7 +2,6 @@
 import scrapy
 import urllib
 from ebay.items import EbayItem
-from scrapy.http import FormRequest
 import urlparse
 
 
