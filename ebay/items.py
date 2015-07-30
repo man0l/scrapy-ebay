@@ -25,4 +25,5 @@ class DetailsItem(scrapy.Item):
     brand         = scrapy.Field()
     ean           = scrapy.Field()
     url           = scrapy.Field()    
+    description   = scrapy.Field()
     
