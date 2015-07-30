@@ -5,6 +5,7 @@ import re
 import lxml
 from lxml.html.clean import Cleaner
 from bs4 import BeautifulSoup
+import unicodedata
 
 
 class EbayDetailsSpider(scrapy.Spider):
@@ -76,17 +77,20 @@ class EbayDetailsSpider(scrapy.Spider):
          
     def parse_iframe(self, response):
        item = response.meta['item']
+       html = response.xpath("//*").extract()[0]
+       
        cleaner = Cleaner()
        cleaner.javascript = True
        cleaner.style = True
-       clean = cleaner.clean_html(response.xpath("//*").extract()[0]) 
-       clean = lxml.html.tostring(clean)
+       html = unicodedata.normalize("NFKD", html).encode('ascii','ignore')
+       clean = cleaner.clean_html(html) 
+       
 
        soup = BeautifulSoup(clean, 'lxml')
        text = soup.get_text()
 
        
-       item['description'] = clean
+       item['description'] = text
        yield item
     
         
