@@ -15,28 +15,6 @@ class EbayDetailsSpider(scrapy.Spider):
         line.strip() for line in open("ebay_items.txt", "r")
     )
     
-    def parseDetails(self, response):
-      iframe_url = response.xpath('//*[@id="desc_ifr"]').xpath("@src").extract()[0]        
-      yield scrapy.Request(iframe_url, callback=self.parseIframe)
-
-    def parseIframe(self, response):
-        item = DetailsItem()
-        item['description'] = response.extract()
-        yield item
- 
-    def parseIframe1(self, response):
-        item = response.meta['item']      
-        self.logger.info('debug url %s', response.url)
-        self.logger.info('debug item %s', ",".join(item))
-        if item:
-          item['description'] = "I am description"        
-          self.logger.info("I am item %s", item.join(","))
-        else:
-          inspect_response(response, self)
-        
-        yield scrapy.Request(response.meta['parent_url'], callback=self.parseDetail, meta={ "item": item })
-
-
     def parse(self, response):
         item = DetailsItem()
         itemSpecifics = list()
@@ -60,19 +38,30 @@ class EbayDetailsSpider(scrapy.Spider):
                 
             if 'value' in locals() and 'key' in locals():
                 if key == 'upc':
-                    item[key] = value
+                    item['upc'] = value
                 elif key == 'mpn':
-                    item[key] = value
+                    item['mpn'] = value
                 elif key == 'brand':
-                    item[key] = value
+                    item['brand'] = value
                 elif key == 'ean':
-                    item[key] = value
-                
+                    item['ean'] = value
+        
+        caregory_url =  response.xpath('//*[@id="vi-VR-brumb-lnkLst"]/table/tr[1]/td[1]/h2[1]/ul[1]/li[last()]/a[1]/@href').extract()[0]    
+        #mm-saleDscPrc     
+        if response.xpath('//*[@id="prcIsum"]/text()'):
+           price = response.xpath('//*[@id="prcIsum"]/text()').extract()[0].replace("US $", "")
+        elif response.xpath('//*[@id="saleDscPrc"]/text()'):
+           price = response.xpath('//*[@id="saleDscPrc"]/text()').extract()[0].replace("US $", "")
+        else:
+           price = 'not_set'
+        
+          
             
-            
-        item['url'] = response.url
-        item['ebayID'] = ebayID   
-        req = scrapy.Request(iframe_url, callback=self.parse_iframe, meta={ "item":item })
+        item['url']      = response.url
+        item['ebayID']   = ebayID   
+        item['price']    = price
+        item['category'] = re.compile("\d+").search(caregory_url).group(0)
+        req              = scrapy.Request(iframe_url, callback=self.parse_iframe, meta={ "item":item })
         yield req
          
     def parse_iframe(self, response):
@@ -92,6 +81,3 @@ class EbayDetailsSpider(scrapy.Spider):
        
        item['description'] = text
        yield item
-    
-        
-        
