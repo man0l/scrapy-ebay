@@ -61,9 +61,17 @@ COOKIES_ENABLED=True
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ebay.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'scrapy.pipelines.images.ImagesPipeline': 1,
+    'ebay.pipelines.AmazonPipeline': 300,
+    'ebay.pipelines.MySQLStorePipeline': 310	
+}
+
+IMAGES_THUMBS = {
+    'small': (100, 100)   
+}
+
+IMAGES_STORE = "/home/azureuser/projects_data/amazon/images"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -94,7 +102,42 @@ USER_AGENT_LIST = [
 DOWNLOADER_MIDDLEWARES = {
          'ebay.middlewares.RandomUserAgentMiddleware': 400,
          'ebay.middlewares.ProxyMiddleware': 410,
-         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
+         'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     # Disable compression middleware, so the actual HTML pages are cached
 }
+
+HTTP_PROXY = 'http://127.0.0.1:8123'
+# similar API credentials
+DANDELION_APP_ID = 'd40305b7'
+DANDELION_KEY    = '7d432531dfb0d3173212d4203f25d4b6'
+
+MYSQL_HOST  = 'localhost'
+MYSQL_DBNAME = 'ebay'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = ''
+
+# Enables scheduling storing requests queue in redis.
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+
+# Don't cleanup redis queues, allows to pause/resume crawls.
+SCHEDULER_PERSIST = True
+
+# Schedule requests using a priority queue. (default)
+SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderPriorityQueue'
+
+# Schedule requests using a queue (FIFO).
+SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderQueue'
+
+# Schedule requests using a stack (LIFO).
+SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderStack'
+
+# Max idle time to prevent the spider from being closed when distributed crawling.
+# This only works if queue class is SpiderQueue or SpiderStack,
+# and may also block the same time when your spider start at the first time (because the queue is empty).
+SCHEDULER_IDLE_BEFORE_CLOSE = 1
+
+
+# Specify the host and port to use when connecting to Redis (optional).
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
 
