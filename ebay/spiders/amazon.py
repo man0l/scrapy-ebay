@@ -16,8 +16,8 @@ class AmazonSpider(RedisSpider):
    
 
     def parse(self, response):
-        filename = str(uuid.uuid1()) + ".html"
-        open(filename, 'wb').write(response.body)
+        #filename = str(uuid.uuid1()) + ".html"
+        #open(filename, 'wb').write(response.body)
         p = re.compile("(\d+(\.\d+)?) out of \d+ stars")
         item = AmazonItem()
         
@@ -27,7 +27,7 @@ class AmazonSpider(RedisSpider):
         item['reviews'] = p.match(reviews).group(1)
         soldBySelector = response.css("#merchant-info a")
         if soldBySelector:
-            soldBy = soldBySelector[0].xpath("text()").extract()
+            soldBy = soldBySelector[0].xpath("text()").extract()[0]
             isFBA = 0
         else:
             p = re.compile("Ships from and sold by (Amazon)")            
@@ -51,6 +51,7 @@ class AmazonSpider(RedisSpider):
             shortDesc += "<li>" + i.xpath("text()").extract()[0] +"</li>"
         
         item['shortDesc'] = shortDesc
+        item['longDescRaw'] = ""
         
         #item['longDescRaw'] = response.css("#productDescription .productDescriptionWrapper").extract()[0]
         if response.css("#productDescription"):
@@ -63,8 +64,7 @@ class AmazonSpider(RedisSpider):
             
         elif response.css(".a-container").xpath("script[contains(.,'ProductDescriptionIframeResize')]"):
             
-            longDescSel = response.css(".a-container").xpath("script[contains(.,'ProductDescriptionIframeResize')]")          
-             
+            longDescSel = response.css(".a-container").xpath("script[contains(.,'ProductDescriptionIframeResize')]")                      
             longDesc = self.parseIframe(longDescSel.extract()[0])
             desc = re.compile("(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s").split(longDesc)
 
@@ -73,32 +73,36 @@ class AmazonSpider(RedisSpider):
             v = doc.cssselect(".a-container")[0]
             c = etree.tostring(v)
              
-            longDesc = self.parseIframe(c)
+            longDesc = self.parseIframe(c)            
             desc = re.compile("(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s").split(longDesc)
 
         
-        longDesc = "<p>" + "</p><p>".join(desc[0:3]) +"</p>"
+        longDesc = "<p>" + "".join(desc[0:3]) +"</p>"
         longDesc.replace("\n", "<br />")
+        
+        if not item['longDescRaw']:
+            item['longDescRaw'] = longDesc
         
         
         item['longDesc'] = longDesc
-        item['asin'] = response.css("#detail-bullets ul").xpath("li[contains(.,'ASIN')]/text()").extract()
+        item['asin'] = response.css("#detail-bullets ul").xpath("li[contains(.,'ASIN')]/text()").extract()[0].strip()
         item['upc'] = ""
         upc = response.css("#detail-bullets ul").xpath("li[contains(.,'UPC')]/text()")
-        if upc != None:
-           upc = upc.extract()
+        self.logger.info(upc)
+        if upc:
+           upc = upc.extract()[0]
            item['upc'] = upc
            
         item['mpn'] = ""
         mpn = response.css("#detail-bullets ul").xpath("li[contains(.,'Item model number')]/text()")
-        if mpn != None:
-           mpn = mpn.extract()
+        if mpn:
+           mpn = mpn.extract()[0]
            item['mpn'] = mpn
         
         item['dimensions'] = ""
         dimensions = response.css("#detail-bullets ul").xpath("li[contains(.,'Product Dimensions')]/text()")
-        if dimensions != None:
-           dimensions = dimensions.extract()
+        if dimensions:
+           dimensions = dimensions.extract()[0]
            item['dimensions'] = dimensions
 
         item['reviewsNum'] = ""
@@ -109,7 +113,7 @@ class AmazonSpider(RedisSpider):
         
         images = response.css("#imageBlock_feature_div").xpath("script").extract()[0]
         p = re.compile("hiRes\":\"(http://.*?)\"", re.DOTALL)
-        item['images_url'] = p.findall(images)
+        item['image_urls'] = p.findall(images)
         
         yield item
         

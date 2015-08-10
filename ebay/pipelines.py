@@ -133,10 +133,14 @@ class MySQLStorePipeline(object):
 
     def process_item(self, item, spider):
     
-        if spider.name in ['ebay_spider', 'amazon_spider']:
+        if spider.name in ['ebay_spider']:
             return item
         # run db query in the thread pool
-        d = self.dbpool.runInteraction(self._do_upsert, item, spider)
+        if spider.name == 'amazon_spider':
+            d = self.dbpool.runInteraction(self._do_upsert_amazon, item, spider)
+        else:
+            d = self.dbpool.runInteraction(self._do_upsert, item, spider)
+            
         d.addErrback(self._handle_error, item, spider)
         # at the end return the item in case of success or failure
         d.addBoth(lambda _: item)
@@ -145,6 +149,63 @@ class MySQLStorePipeline(object):
         # operation (deferred) has finished.
         return d
 
+
+    def _do_upsert_amazon(self, conn, item, spider):
+        guid = item['asin']
+        #spider.log("before exist")
+        conn.execute("""SELECT EXISTS(
+            SELECT 1 FROM amazon_item WHERE asin = %s
+        )""", (guid, ))
+        ret = conn.fetchone()[0]
+        #spider.log("select existing")
+        if ret:
+            # update the data
+            conn.execute("""
+                UPDATE amazon_item SET title=%s, reviews=%s, soldBy=%s,
+                    isFBA=%s, price=%s, availability=%s, isInStock=%s, shortDesc=%s,
+                    longDesc=%s, longDescRaw=%s, asin=%s, upc=%s, mpn=%s,
+                    dimensions=%s, reviewsNum=%s, updated_at=NOW(), created_at=NOW()
+                    WHERE id = %s
+            """, ( item['title'], item['reviews'] if item['reviews'] else '', item['soldBy'], item['isFBA'], item['price'], item['availability'], item['isInStock'],
+                   item['shortDesc'], item['longDesc'], item['longDescRaw'], item['asin'], item['upc'], item['mpn'],
+                   item['dimensions'], item['reviewsNum'], guid
+                  ))
+                  
+            conn.execute("""
+                SELECT id FROM amazon_item WHERE asin = %s
+            """, (guid, ))
+            item_id = conn.fetchone()[0]
+ 
+            conn.execute("""
+                DELETE FROM amazon_item_images WHERE asin=%s and amazon_id=%s
+            """, (guid, item_id))
+            if item.get('images', None) is not None:
+                self._insert_images(conn, item['images'], item['asin'], item_id)
+
+
+        else:
+            # insert the data
+            conn.execute("""
+                INSERT INTO amazon_item SET title=%s, reviews=%s, soldBy=%s,
+                    isFBA=%s, price=%s, availability=%s, isInStock=%s, shortDesc=%s,
+                    longDesc=%s, longDescRaw=%s, asin=%s, upc=%s, mpn=%s,
+                    dimensions=%s, reviewsNum=%s, updated_at=NOW(), created_at=NOW()
+            """, ( item['title'], item['reviews'] if item['reviews'] else '', item['soldBy'], item['isFBA'], item['price'], item['availability'], item['isInStock'],
+                   item['shortDesc'], item['longDesc'], item['longDescRaw'], item['asin'], item['upc'], item['mpn'],
+                   item['dimensions'], item['reviewsNum']
+                  ))
+                  
+            
+            conn.execute("""
+                SELECT LAST_INSERT_ID() as id
+            """)
+            item_id = conn.fetchone()[0]
+            
+            if item.get('images', None) is not None:
+                self._insert_images(conn, item['images'], item['asin'], item_id)
+
+
+    
     def _do_upsert(self, conn, item, spider):
         """Perform an insert or update."""
         guid = item['ebayID']
@@ -162,7 +223,7 @@ class MySQLStorePipeline(object):
                 SET upc=%s, mpn=%s, brand=%s, ean=%s, url=%s, description=%s, price=%s, category=%s, asin=%s, created_at=%s
                 WHERE ebay_id=%s
             """, (item['upc'] if item['upc'] else '', item['mpn'] if item['mpn'] else '', item['brand'] if item['brand'] else '', item['ean'] if item['ean'] else '', item['url'], item['description'],item['price'],item['category'], asin, now, guid))
-            spider.log("Item updated in db: %s %r" % (guid, item))
+            #spider.log("Item updated in db: %s %r" % (guid, item))
             
             conn.execute("""
                 SELECT id FROM item WHERE ebay_id = %s
@@ -191,7 +252,7 @@ class MySQLStorePipeline(object):
               self._insert_sold(conn, item['sold_items'], item_id)
 
                         
-            spider.log("Item stored in db: %s %r" % (guid, item))
+            #spider.log("Item stored in db: %s %r" % (guid, item))
 
     def _handle_error(self, failure, item, spider):
         """Handle occurred on db interaction."""
@@ -204,4 +265,12 @@ class MySQLStorePipeline(object):
             conn.execute("""
                 INSERT INTO item_sold SET price=%s, quantity=%s, date_at=%s, ebay_id=%s, item_id=%s, created_at=%s
             """, (float(sold['price']), int(sold['quantity']), sold['date'], sold['ebayID'], item_id, now ))
+            
+    def _insert_images(self, conn, images, asin, item_id):
+        for image in images:
+            conn.execute("""
+              INSERT INTO amazon_item_images SET amazon_id=%s, asin=%s, path=%s, image_url=%s,  display_order=0, updated_at=NOW(), created_at=NOW()
+            """, ( item_id, asin, image.get('path', ""), image.get('url', "") ))
+        #spider.log("insert images")
+
 

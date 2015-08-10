@@ -56,6 +56,6 @@ class AmazonItem(scrapy.Item):
     dimensions = scrapy.Field()
     reviewsNum = scrapy.Field()
     sellerRank = scrapy.Field()
-    images_url = scrapy.Field()
+    image_urls = scrapy.Field()
     images = scrapy.Field()
     
