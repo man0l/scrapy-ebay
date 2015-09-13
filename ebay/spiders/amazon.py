@@ -49,6 +49,7 @@ class AmazonSpider(RedisSpider):
         shortDesc = "<ul>"
         for i in response.css("#feature-bullets li span"):
             shortDesc += "<li>" + i.xpath("text()").extract()[0] +"</li>"
+        shortDesc += "</ul>"
         
         item['shortDesc'] = shortDesc
         item['longDescRaw'] = ""
