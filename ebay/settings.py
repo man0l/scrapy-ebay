@@ -71,7 +71,7 @@ IMAGES_THUMBS = {
     'small': (100, 100)   
 }
 
-IMAGES_STORE = "/home/azureuser/projects_data/amazon/images"
+IMAGES_STORE = "/var/www/spider-admin/web/images/"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
