@@ -13,7 +13,7 @@ class EbayDetailsSpider(scrapy.Spider):
     name = "ebay_details"
     allowed_domains = ["ebay.com", "ebaydesc.com"]
     start_urls = (
-        line.strip() for line in open("/home/azureuser/projects/ebay/spiders/ebay_items.txt", "r")
+        line.strip() for line in open("/app/ebay/spiders/ebay_items.txt", "r")
     )
     
     def parse(self, response):
