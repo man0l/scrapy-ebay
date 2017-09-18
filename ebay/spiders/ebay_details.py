@@ -7,6 +7,7 @@ from lxml.html.clean import Cleaner
 from bs4 import BeautifulSoup
 import unicodedata
 from time import strptime, strftime
+from datetime import datetime
  
 
 class EbayDetailsSpider(scrapy.Spider):
@@ -20,7 +21,7 @@ class EbayDetailsSpider(scrapy.Spider):
         item = DetailsItem()
         itemSpecifics = list()
         attributes = response.css("div.itemAttr").css('table td')
-        iframe_url = response.xpath('//*[@id="desc_ifr"]').xpath("@src").extract()[0]
+        #iframe_url = response.xpath('//*[@id="desc_ifr"]').xpath("@src").extract()[0]
          
         match = re.compile("ebay.com/itm.*?/(\d+)").search(response.url)
         ebayID = match.group(1)
@@ -53,7 +54,7 @@ class EbayDetailsSpider(scrapy.Spider):
                 elif key == 'ean':
                     item['ean'] = value
         
-        caregory_url =  response.xpath('//*[@id="vi-VR-brumb-lnkLst"]/table/tr[1]/td[1]/h2[1]/ul[1]/li[last()]/a[1]/@href').extract()[0]    
+        #caregory_url =  response.xpath('//*[@id="vi-VR-brumb-lnkLst"]/table/tr[1]/td[1]/h2[1]/ul[1]/li[last()]/a[1]/@href').extract()[0]    
         #mm-saleDscPrc     
         if response.xpath('//*[@id="prcIsum"]/text()'):
            price = response.xpath('//*[@id="prcIsum"]/text()').extract()[0].replace("US $", "")
@@ -67,7 +68,7 @@ class EbayDetailsSpider(scrapy.Spider):
         item['url']      = response.url
         item['ebayID']   = ebayID   
         item['price']    = price
-        item['category'] = re.compile("\d+").search(caregory_url).group(0)
+        #item['category'] = re.compile("\d+").search(caregory_url).group(0)
         
         item['sold'] = 0
         p = re.compile("[0-9,]*")
@@ -78,8 +79,8 @@ class EbayDetailsSpider(scrapy.Spider):
            sold_url = sold_qty.xpath("@href").extract()[0]
            yield scrapy.Request(sold_url, callback=self.parse_sold, meta={ "item":item })
         
-        req  = scrapy.Request(iframe_url, callback=self.parse_iframe, meta={ "item":item })
-        yield req
+        #req  = scrapy.Request(iframe_url, callback=self.parse_iframe, meta={ "item":item })
+        #yield req
          
     def parse_iframe(self, response):
        item = response.meta['item']
@@ -104,18 +105,23 @@ class EbayDetailsSpider(scrapy.Spider):
         item['sold_items'] = []
         
         table = response.css(".BHbidSecBorderGrey").xpath("div[2]/table[2]")
+        count = 0		
         for row in table.xpath("tr[position()>1]"):
             sold = SoldItem()
             #for cell in row.xpath("td[position() > 2 and position() < 6]"):
             sold['price']       = float(row.xpath("td[position() = 3]/text()").extract()[0].replace("US $", ""))
             sold['quantity']    = row.xpath("td[position() = 4]/text()")[0].extract()[0]
             date =         row.xpath("td[position() = 5]/text()").extract()[0].replace(" PDT", "").replace(" PST", "")
-            date = strptime(date, "%b-%d-%y %H:%M:%S")
+            date = strptime(date, "%b-%d-%y %H:%M:%S")			
+            firstDayOfMonth = datetime(datetime.now().year, datetime.now().month, 1)
+            soldDate = datetime(date.tm_year, date.tm_mon, date.tm_mday)
+            if soldDate > firstDayOfMonth:
+              count += 1
             sold['date'] = strftime("%Y-%m-%d %H:%M:%S", date)
             sold['ebayID'] = item['ebayID']
-            item['sold_items'].append(sold)
-            
-        
+            item['sold_items'] = count
+			
+		
         yield item
                 
 

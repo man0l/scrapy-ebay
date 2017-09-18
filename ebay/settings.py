@@ -62,9 +62,9 @@ COOKIES_ENABLED=True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'scrapy.pipelines.images.ImagesPipeline': 1,
-    'ebay.pipelines.AmazonPipeline': 300,
-    'ebay.pipelines.MySQLStorePipeline': 310	
+  # @'scrapy.pipelines.images.ImagesPipeline': 1,
+   # 'ebay.pipelines.AmazonPipeline': 300,
+   # 'ebay.pipelines.MySQLStorePipeline': 310	
 }
 
 IMAGES_THUMBS = {
@@ -80,9 +80,9 @@ AUTOTHROTTLE_ENABLED=True
 # The initial download delay
 AUTOTHROTTLE_START_DELAY=1
 # The maximum download delay to be set in case of high latencies
-AUTOTHROTTLE_MAX_DELAY=60
+AUTOTHROTTLE_MAX_DELAY=30
 # Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG=False
+AUTOTHROTTLE_DEBUG=True
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
@@ -95,18 +95,18 @@ AUTOTHROTTLE_MAX_DELAY=60
 # More comprehensive list can be found at 
 # http://techpatterns.com/forums/about304.html
 USER_AGENT_LIST = [
-    'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.36 Safari/535.7',
-    'Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:16.0) Gecko/16.0 Firefox/16.0',
+    #'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.36 Safari/535.7',
+    #'Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:16.0) Gecko/16.0 Firefox/16.0',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/534.55.3 (KHTML, like Gecko) Version/5.1.3 Safari/534.53.10'
 ]
 DOWNLOADER_MIDDLEWARES = {
-         'ebay.middlewares.RandomUserAgentMiddleware': 400,
+         #'ebay.middlewares.RandomUserAgentMiddleware': 400,
          'ebay.middlewares.ProxyMiddleware': 410,
-         'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+         'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
     # Disable compression middleware, so the actual HTML pages are cached
 }
 
-HTTP_PROXY = 'http://127.0.0.1:8123'
+HTTP_PROXY = 'http://polipo:8118'
 # similar API credentials
 DANDELION_APP_ID = 'd40305b7'
 DANDELION_KEY    = '7d432531dfb0d3173212d4203f25d4b6'

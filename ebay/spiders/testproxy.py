@@ -4,8 +4,8 @@ from scrapy.http import Request
 
 class TestSpider(CrawlSpider):
     name = "testproxy"
-    domain_name = "whatismyip.com"
-    start_urls = ["http://whatismyip.com"]
+    domain_name = "check.torproject.org"
+    start_urls = ["https://check.torproject.org/"]
 
     def parse(self, response):
         open('test.html', 'wb').write(response.body)
